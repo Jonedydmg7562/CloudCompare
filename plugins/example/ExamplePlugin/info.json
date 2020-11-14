@@ -1,6 +1,6 @@
 {
 	"type" : "Standard",
-	"name" : "Example (Standard Plugin)",
+	"name" : "Example (Standard Plugin)test bom",
 	"icon" : ":/CC/plugin/ExamplePlugin/images/icon.png",
 	"description": "This is a description of the marvelous Example plugin. It does nothing.",
 	"authors" : [

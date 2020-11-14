@@ -1,0 +1,3 @@
+先使用.git-good生成有效的dll（此.git文件是thinkpad电脑从cc源项目地址生成）
+再替换为自己的.git文件（此.git文件是fork自己项目生成的）
+具体原因未知

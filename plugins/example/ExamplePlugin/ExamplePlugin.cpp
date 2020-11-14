@@ -35,6 +35,9 @@
 
 #include "ExamplePlugin.h"
 
+//mine_add
+#include<ccPointCloud.h>//基础点类
+
 // Default constructor:
 //	- pass the Qt resource path to the info.json file (from <yourPluginName>.qrc file) 
 //  - constructor should mainly be used to initialize actions and other members
@@ -94,30 +97,87 @@ QList<QAction *> ExamplePlugin::getActions()
 // main interface). You can access most of CC's components (database,
 // 3D views, console, etc.) via the 'm_app' variable (see the ccMainAppInterface
 // class in ccMainAppInterface.h).
+//void ExamplePlugin::doAction_old()
+//{	
+//	if ( m_app == nullptr )
+//	{
+//		// m_app should have already been initialized by CC when plugin is loaded
+//		Q_ASSERT( false );
+//		
+//		return;
+//	}
+//
+//	/*** HERE STARTS THE ACTION ***/
+//
+//	// Put your code here
+//	// --> you may want to start by asking for parameters (with a custom dialog, etc.)
+//
+//	// This is how you can output messages
+//	// Display a standard message in the console
+//	m_app->dispToConsole( "[ExamplePlugin] Hello world!", ccMainAppInterface::STD_CONSOLE_MESSAGE );
+//	m_app->dispToConsole("[ExamplePlugin] Hello Aijun Shi!", ccMainAppInterface::STD_CONSOLE_MESSAGE);
+//
+//	// Display a warning message in the console
+//	m_app->dispToConsole( "[ExamplePlugin] Warning: example plugin shouldn't be used as is", ccMainAppInterface::WRN_CONSOLE_MESSAGE );
+//	
+//	// Display an error message in the console AND pop-up an error box
+//	m_app->dispToConsole( "Example plugin shouldn't be used - it doesn't do anything!", ccMainAppInterface::ERR_CONSOLE_MESSAGE );
+//
+//	/*** HERE ENDS THE ACTION ***/
+//}
+
+
 void ExamplePlugin::doAction()
-{	
-	if ( m_app == nullptr )
+{
+	if (m_app == nullptr)
 	{
 		// m_app should have already been initialized by CC when plugin is loaded
-		Q_ASSERT( false );
-		
+		Q_ASSERT(false);
+
 		return;
 	}
 
 	/*** HERE STARTS THE ACTION ***/
 
-	// Put your code here
-	// --> you may want to start by asking for parameters (with a custom dialog, etc.)
+	/*********************************插入代码*****************************************/
+	// 在这里插入需要的操作
+
+	const ccHObject::Container& selected_objs = m_app->getSelectedEntities();// 获取选择的点云
+	if (selected_objs.size() != 1)
+	{
+		m_app->dispToConsole("Please select one cloud!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+		return;
+	}
+	ccHObject* ent = selected_objs[0];
+	assert(ent);
+	if (!ent || !ent->isA(CC_TYPES::POINT_CLOUD))//判断所选的对象是否为点云
+	{
+		m_app->dispToConsole("Please select one cloud!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
+		return;
+	}
+	// 插件功能：把选择的点云的x坐标增加100
+	ccPointCloud* pc = static_cast<ccPointCloud*>(ent);
+	ccPointCloud* pc_new = new ccPointCloud("new cc");
+	for (int i = 0; i < pc->size(); ++i)
+	{
+		pc_new->addPoint(CCVector3(pc->getPoint(i)->x + 100, pc->getPoint(i)->y, pc->getPoint(i)->z));
+	}
+
+	ccHObject* cc_containers = new ccHObject("new-cc");
+	cc_containers->addChild(pc_new);
+	m_app->addToDB(cc_containers, true, true);
+	m_app->refreshAll();
+	/*********************************插入代码*****************************************/
 
 	// This is how you can output messages
 	// Display a standard message in the console
-	m_app->dispToConsole( "[ExamplePlugin] Hello world!", ccMainAppInterface::STD_CONSOLE_MESSAGE );
-	
-	// Display a warning message in the console
-	m_app->dispToConsole( "[ExamplePlugin] Warning: example plugin shouldn't be used as is", ccMainAppInterface::WRN_CONSOLE_MESSAGE );
-	
-	// Display an error message in the console AND pop-up an error box
-	m_app->dispToConsole( "Example plugin shouldn't be used - it doesn't do anything!", ccMainAppInterface::ERR_CONSOLE_MESSAGE );
+	m_app->dispToConsole("[ExamplePlugin] plugin run successfully!", ccMainAppInterface::STD_CONSOLE_MESSAGE);
 
-	/*** HERE ENDS THE ACTION ***/
+	//Display a warning message in the console
+		//m_app->dispToConsole( "[ExamplePlugin] Warning: example plugin shouldn't be used as is", ccMainAppInterface::WRN_CONSOLE_MESSAGE );
+		//
+		//Display an error message in the console AND pop - up an error box
+		//m_app->dispToConsole( "Example plugin shouldn't be used - it doesn't do anything!", ccMainAppInterface::ERR_CONSOLE_MESSAGE );
+
+		/*** HERE ENDS THE ACTION ***/
 }
