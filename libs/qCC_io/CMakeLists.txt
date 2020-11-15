@@ -44,6 +44,17 @@ elseif( APPLE )
 		INSTALL_RPATH "." )
 endif()
 
+#设置输出目录
+if( WIN32 )
+	#set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/${BITS}")
+	#set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/${BITS}")
+	set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
+	set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
+elseif( UNIX )
+	set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/${BITS}/${CMAKE_BUILD_TYPE}")
+	set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/${BITS}/${CMAKE_BUILD_TYPE}")
+endif()
+
 # install (shared) lib to specified destinations
 if( WIN32 OR APPLE )
 	foreach( dest ${INSTALL_DESTINATIONS} )
