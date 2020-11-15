@@ -1,12 +1,12 @@
 {
 	"type" : "Standard",
-	"name" : "Example (Standard Plugin)",
-	"icon" : ":/CC/plugin/ExamplePlugin/images/icon.png",
+	"name" : "DeleteIsland (Standard Plugin)",
+	"icon" : ":/CC/plugin/DeleteIsland/images/icon.png",
 	"description": "This is a description of the marvelous Example plugin. It does nothing.",
 	"authors" : [
 		{
-			"name" : "Daniel Girardeau-Montaut",
-			"email" : "daniel.girardeau@gmail.com"
+			"name" : "Jone",
+			"email" : "sajwuxi@gmail.com"
 		}
 	],
 	"maintainers" : [
