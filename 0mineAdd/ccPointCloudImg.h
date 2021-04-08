@@ -15,8 +15,8 @@
 //#                                                                        #
 //##########################################################################
 
-#ifndef CC_POINT_CLOUD_HEADER
-#define CC_POINT_CLOUD_HEADER
+#ifndef CC_POINT_CLOUD_IMG_HEADER
+#define CC_POINT_CLOUD_IMG_HEADER
 
 #ifdef _MSC_VER
 //To get rid of the warnings about dominant inheritance
@@ -42,7 +42,7 @@ class ccProgressDialog;
 class ccPointCloudLOD;
 
 /***************************************************
-				ccPointCloud
+				ccPointCloudImg
 ***************************************************/
 
 //! Max number of points per cloud (point cloud will be chunked above this limit)
@@ -51,21 +51,6 @@ const unsigned CC_MAX_NUMBER_OF_POINTS_PER_CLOUD =  128000000;
 #else //CC_ENV_64 (but maybe CC_ENV_128 one day ;)
 const unsigned CC_MAX_NUMBER_OF_POINTS_PER_CLOUD = 2000000000; //we must keep it below MAX_INT to avoid probable issues ;)
 #endif
-
-union VCoordFlag
-{
-	struct
-	{
-		bool Valid : 1;
-		bool Deleted : 1;
-		bool Selected : 1;
-		bool Visisted : 1;
-		bool Modified : 1;
-		bool Boundary : 1;
-	};
-	char flags;
-	VCoordFlag() :flags(0) {}
-};
 
 //! A 3D cloud and its associated features (color, normals, scalar fields, etc.)
 /** A point cloud can have multiple features:
@@ -76,7 +61,7 @@ union VCoordFlag
 	- per-point visibility information (to hide/display subsets of points)
 	- other children objects (meshes, calibrated pictures, etc.)
 **/
-class QCC_DB_LIB_API ccPointCloud : public CCLib::PointCloudTpl<ccGenericPointCloud>
+class QCC_DB_LIB_API ccPointCloudImg : public CCLib::PointCloudTpl<ccGenericPointCloud>
 {
 public:
 	//! Base class (shortcut)
@@ -88,13 +73,13 @@ public:
 		added to this cloud, at least partially).
 		\param name cloud name (optional)
 	**/
-	ccPointCloud(QString name = QString()) throw();
+	ccPointCloudImg(QString name = QString()) throw();
 
 	//! Default destructor
-	~ccPointCloud() override;
+	~ccPointCloudImg() override;
 
 	//! Returns class ID
-	CC_CLASS_ENUM getClassID() const override { return CC_TYPES::POINT_CLOUD; }
+	CC_CLASS_ENUM getClassID() const override { return CC_TYPES::POINT_CLOUD_IMG; }
 
 public: //clone, copy, etc.
 
@@ -107,7 +92,7 @@ public: //clone, copy, etc.
 		\param cloud a GenericIndexedCloud structure
 		\param sourceCloud cloud from which main parameters will be imported (optional)
 	**/
-	static ccPointCloud* From(const CCLib::GenericIndexedCloud* cloud, const ccGenericPointCloud* sourceCloud = nullptr);
+	static ccPointCloudImg* From(const CCLib::GenericIndexedCloud* cloud, const ccGenericPointCloud* sourceCloud = nullptr);
 
 	//! Creates a new point cloud object from a GenericCloud
 	/** "GenericCloud" is a very simple and light interface from CCLib. It is
@@ -119,7 +104,7 @@ public: //clone, copy, etc.
 		\param cloud a GenericCloud structure
 		\param sourceCloud cloud from which main parameters will be imported (optional)
 	**/
-	static ccPointCloud* From(CCLib::GenericCloud* cloud, const ccGenericPointCloud* sourceCloud = nullptr);
+	static ccPointCloudImg* From(CCLib::GenericCloud* cloud, const ccGenericPointCloud* sourceCloud = nullptr);
 
 	//! Warnings for the partialClone method (bit flags)
 	enum CLONE_WARNINGS {	WRN_OUT_OF_MEM_FOR_COLORS		= 1,
@@ -135,7 +120,7 @@ public: //clone, copy, etc.
 		\param selection a ReferenceCloud structure (pointing to source)
 		\param[out] warnings [optional] to determine if warnings (CTOR_ERRORS) occurred during the duplication process
 	**/
-	ccPointCloud* partialClone(const CCLib::ReferenceCloud* selection, int* warnings = nullptr) const;
+	ccPointCloudImg* partialClone(const CCLib::ReferenceCloud* selection, int* warnings = nullptr) const;
 
 	//! Clones this entity
 	/** All the main features of the entity are cloned, except from the octree and
@@ -144,7 +129,7 @@ public: //clone, copy, etc.
 		\param ignoreChildren [optional] whether to ignore the cloud's children or not (in which case they will be cloned as well)
 		\return a copy of this entity
 	**/
-	ccPointCloud* cloneThis(ccPointCloud* destCloud = nullptr, bool ignoreChildren = false);
+	ccPointCloudImg* cloneThis(ccPointCloudImg* destCloud = nullptr, bool ignoreChildren = false);
 
 	//inherited from ccGenericPointCloud
 	ccGenericPointCloud* clone(ccGenericPointCloud* destCloud = nullptr, bool ignoreChildren = false) override;
@@ -153,7 +138,7 @@ public: //clone, copy, etc.
 	/** All the main features of the given entity are added, except from the octree and
 		the points visibility information. Those features are deleted on this cloud.
 	**/
-	const ccPointCloud& operator +=(ccPointCloud*);
+	const ccPointCloudImg& operator +=(ccPointCloudImg*);
 
 public: //features deletion/clearing
 
@@ -163,7 +148,7 @@ public: //features deletion/clearing
 	void clear() override;
 
 	//! Erases the cloud points
-	/** Prefer ccPointCloud::clear by default.
+	/** Prefer ccPointCloudImg::clear by default.
 		\warning DANGEROUS
 	**/
 	void unalloactePoints();
@@ -481,7 +466,7 @@ public: //other methods
 
 
 	//! Sets whether visibility check is enabled or not (e.g. during distances computation)
-	/** See ccPointCloud::testVisibility.
+	/** See ccPointCloudImg::testVisibility.
 	**/
 	inline void enableVisibilityCheck(bool state) { m_visibilityCheckEnabled = state; }
 
@@ -638,7 +623,7 @@ public: //other methods
 		\param outside whether to select the points inside or outside of the specified interval
 		\return resulting cloud (remaining points)
 	**/
-	ccPointCloud* filterPointsByScalarValue(ScalarType minVal, ScalarType maxVal, bool outside = false);
+	ccPointCloudImg* filterPointsByScalarValue(ScalarType minVal, ScalarType maxVal, bool outside = false);
 
 	//! Hides points whose scalar values falls into an interval
 	/** Values are taken from the current OUTPUT scalar field.
@@ -657,7 +642,7 @@ public: //other methods
 		\param progressCb for progress notification
 		\return the unrolled point cloud
 		**/
-	ccPointCloud* unrollOnCylinder(	PointCoordinateType radius,
+	ccPointCloudImg* unrollOnCylinder(	PointCoordinateType radius,
 									unsigned char coneAxisDim,
 									CCVector3* center = nullptr,
 									bool exportDeviationSF = false,
@@ -675,7 +660,7 @@ public: //other methods
 		\param progressCb for progress notification
 		\return the unrolled point cloud
 	**/
-	ccPointCloud* unrollOnCone(	double coneAngle_deg,
+	ccPointCloudImg* unrollOnCone(	double coneAngle_deg,
 								const CCVector3& coneApex,
 								unsigned char coneAxisDim,
 								bool developStraightenedCone,
@@ -715,7 +700,7 @@ public: //other methods
 		\param ignoreChildren whether to copy input cloud's children or not
 		\return the resulting point cloud
 	**/
-	const ccPointCloud& append(ccPointCloud* cloud, unsigned pointCountBefore, bool ignoreChildren = false);
+	const ccPointCloudImg& append(ccPointCloudImg* cloud, unsigned pointCountBefore, bool ignoreChildren = false);
 
 	//! Enhances the RGB colors with the current scalar field (assuming it's intensities)
 	bool enhanceRGBWithIntensitySF(int sfIdx, bool useCustomIntensityRange = false, double minI = 0.0, double maxI = 1.0);
@@ -755,16 +740,9 @@ protected:
 	std::vector<Grid::Shared> m_grids;
 
 	//! Whether visibility check is available or not (during comparison)
-	/** See ccPointCloud::testVisibility
+	/** See ccPointCloudImg::testVisibility
 	**/
 	bool m_visibilityCheckEnabled;
-
-public:
-	//! the whole cloud(2.5D) saj add 210408
-	Grid::Shared m_pointImg;
-	int m_width;
-	int m_height;
-	VCoordFlag* m_flags;
 
 protected: // VBO
 
@@ -842,7 +820,7 @@ public: //Level of Detail (LOD)
 	//! Intializes the LOD structure
 	/** \return success
 	**/
-	bool initLOD();
+	//bool initLOD();
 
 	//! Clears the LOD structure
 	void clearLOD();
@@ -865,4 +843,4 @@ protected: //waveform (e.g. from airborne scanners)
 
 };
 
-#endif //CC_POINT_CLOUD_HEADER
+#endif //CC_POINT_CLOUD_IMG_HEADER

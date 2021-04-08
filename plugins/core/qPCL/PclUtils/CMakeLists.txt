@@ -21,6 +21,7 @@ endif()
 project( QPCL_PLUGIN_UTILS_LIB )
 
 include_directories( ${PCL_INCLUDE_DIRS} )
+ #include_directories(include ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 
 file( GLOB_RECURSE header_list *.h )
 file( GLOB_RECURSE source_list *.cpp )
@@ -37,9 +38,9 @@ if (WIN32)
 endif()
 
 #define the PCL_VER_1_6_OR_OLDER preprocessor to compile qPCL with older versions of PCL
-if ( PCL_VERSION VERSION_LESS  1.7 ) # VERSION_GREATER Works just like "greater or equal"
-        set_property( TARGET ${PROJECT_NAME} APPEND PROPERTY COMPILE_DEFINITIONS PCL_VER_1_6_OR_OLDER )
-endif()
+#if ( PCL_VERSION VERSION_LESS  1.7 ) # VERSION_GREATER Works just like "greater or equal"
+#        set_property( TARGET ${PROJECT_NAME} APPEND PROPERTY COMPILE_DEFINITIONS PCL_VER_1_6_OR_OLDER )
+#endif()
 
 # Luca's PCL patch support
 if( PCL_VERSION VERSION_GREATER  1.7 ) #from 1.7 the patch was merged

@@ -34,6 +34,10 @@
 #include <QtGui>
 
 #include "DeleteIsland.h"
+#include "DeleteIslandDialog.h"
+
+#include <vector>
+
 
 //mine_add
 #include<ccPointCloud.h>//基础点类
@@ -127,8 +131,55 @@ QList<QAction *> DeleteIsland::getActions()
 //}
 
 
+void get_point_around(ccPointCloud* points, std::vector<bool>& isSelected, std::vector<int>& pointIdSet, const int imageId, const int imageWidth,
+	const int imageHeight, const int windowRange, const float disThread, const bool isDepth)
+{
+	int halfWindow = windowRange >> 1;
+	int winY = imageId / imageWidth; int winX = imageId - winY * imageWidth;
+	const CCVector3 *pointmiddle = points->getPoint(imageId);  int imageIdTemp(0);  float dis(0);
+	int imageW(0), imageH(0);
+	for (int windowH = -halfWindow; windowH <= halfWindow; ++windowH)
+	{
+		for (int windowW = -halfWindow; windowW <= halfWindow; ++windowW)
+		{
+			imageW = winX + windowW; imageH = winY + windowH;
+			if (imageW < 0 || imageW >= imageWidth || imageH < 0 || imageH >= imageHeight)
+			{
+				continue;
+			}
+			imageIdTemp = imageWidth * imageH + imageW;
+			if (isSelected[imageIdTemp] || abs(points->getPoint(imageIdTemp)->z)<1e-6)
+			{
+				continue;
+			}
+			const CCVector3 *pointAround = points->getPoint(imageIdTemp);
+			if (isDepth)
+			{
+				dis = abs(pointmiddle->z - pointAround->z);
+			}
+			else
+			{
+				dis = sqrt((pointmiddle->x - pointAround->x) * (pointmiddle->x - pointAround->x) + (pointmiddle->y - pointAround->y) * (pointmiddle->y - pointAround->y) +
+					(pointmiddle->z - pointAround->z) * (pointmiddle->z - pointAround->z));
+			}
+
+			if (dis > disThread)
+			{
+				continue;
+			}
+			pointIdSet.push_back(imageIdTemp);
+			isSelected[imageIdTemp] = true;
+		}
+	}
+}
+
+
 void DeleteIsland::doAction()
 {
+	size_t timeBegin = clock();
+	QElapsedTimer eTimer;
+	eTimer.start();
+
 	if (m_app == nullptr)
 	{
 		// m_app should have already been initialized by CC when plugin is loaded
@@ -155,16 +206,101 @@ void DeleteIsland::doAction()
 		m_app->dispToConsole("Please select one cloud!", ccMainAppInterface::ERR_CONSOLE_MESSAGE);
 		return;
 	}
-	// 插件功能：把选择的点云的x坐标增加100
+	// 插件功能：去孤岛滤波
 	ccPointCloud* pc = static_cast<ccPointCloud*>(ent);
 
-	//复制点云
-	ccPointCloud* pc_new = new ccPointCloud("new cc");
+	//设置点云长宽
+	pc->m_width = 4096;
+	pc->m_height = 3072;
+	pc->m_flags = new VCoordFlag[pc->m_width * pc->m_height];
 
+	int imgWidth = pc->m_width;
+	int imgHeight = pc->m_height;
+	int pointsNum = pc->m_width * pc->m_height;
+	std::vector<bool> isSelected; //判断当前 point 是否参与聚类
+	isSelected.resize(pointsNum, 0);
+	std::vector<int> currIsland;//当前聚类 point 索引
+	std::vector<std::vector<int>> islandRecordAll;//存储所有聚类
+
+	int numThresh = 1000;
+	int findRange = 3;
+	double disThresh = 0.05;
+	bool isDepth = true;
+	CCVector3 invalidValue(0,0,0);
+	std::vector<bool> isZero(pointsNum);
+
+
+	//显示插件ui窗体
+	{
+		//ccDIDlg safDlg(m_app->getMainWindow());
+		ccDIDlg safDlg;
+		safDlg.spinBox_1->setValue(numThresh);
+		safDlg.spinBox_2->setValue(findRange);
+		safDlg.doubleSpinBox_1->setValue(disThresh);
+		safDlg.spinBox_3->setValue(isDepth);
+
+		if (!safDlg.exec())
+		{
+			return;
+		}
+
+		//存储阈值
+		numThresh = safDlg.spinBox_1->value();
+		findRange = safDlg.spinBox_2->value();
+		disThresh = safDlg.doubleSpinBox_1->value();
+		isDepth = safDlg.spinBox_3->value();
+	}
+
+	for (int ptId = 0; ptId < pointsNum; ptId++)
+	{
+		currIsland.clear();
+		if (abs(pc->getPoint(ptId)->z)<1e-6 || isSelected[ptId] == 1)
+		{
+			continue;
+		}
+		else
+		{
+			currIsland.push_back(ptId);
+			isSelected[ptId] = 1;
+		}
+
+		for (int i = 0; i < currIsland.size(); i++)
+		{
+			get_point_around(pc, isSelected, currIsland, currIsland[i], imgWidth, imgHeight, findRange, disThresh, isDepth);
+		}
+
+		if (numThresh <= 0)
+		{
+			islandRecordAll.push_back(currIsland);
+		}
+		else
+		{
+			if (currIsland.size() < numThresh)
+			{
+//#pragma omp parallel for//此处不可并行
+				for (int idDelete = 0; idDelete < currIsland.size(); ++idDelete)
+				{
+					isZero[currIsland[idDelete]] = true;
+				}
+			}
+		}
+	}
+
+	//复制点云
+	ccPointCloud* pc_new = new ccPointCloud("filtered-cloud");
 	for (int i = 0; i < pc->size(); ++i)
 	{
-		pc_new->addPoint(CCVector3(pc->getPoint(i)->x + 30, pc->getPoint(i)->y, pc->getPoint(i)->z));
+		if (isZero[i])
+		{
+			pc_new->addPoint(CCVector3(60, 0, 0));
+		}
+		else
+		{
+			pc_new->addPoint(CCVector3(pc->getPoint(i)->x + 60, pc->getPoint(i)->y, pc->getPoint(i)->z));
+		}
 	}
+		
+
 
 	//需要将点云转换为generic格式，才可调用数据结构
 	//ccGenericPointCloud gpc(pc_new);
@@ -173,7 +309,7 @@ void DeleteIsland::doAction()
 
 
 
-	ccHObject* cc_containers = new ccHObject("new-cc");
+	ccHObject* cc_containers = new ccHObject("filtered-cloud");
 	cc_containers->addChild(pc_new);
 	m_app->addToDB(cc_containers, true, true);
 	m_app->refreshAll();
@@ -182,12 +318,5 @@ void DeleteIsland::doAction()
 	// This is how you can output messages
 	// Display a standard message in the console
 	m_app->dispToConsole("[DeleteIsland] plugin run successfully!", ccMainAppInterface::STD_CONSOLE_MESSAGE);
-
-	//Display a warning message in the console
-		//m_app->dispToConsole( "[DeleteIsland] Warning: example plugin shouldn't be used as is", ccMainAppInterface::WRN_CONSOLE_MESSAGE );
-		//
-		//Display an error message in the console AND pop - up an error box
-		//m_app->dispToConsole( "Example plugin shouldn't be used - it doesn't do anything!", ccMainAppInterface::ERR_CONSOLE_MESSAGE );
-
-		/*** HERE ENDS THE ACTION ***/
+	ccLog::Print("[DeleteIsland] Timing: %3.3f s.", eTimer.elapsed() / 1000.0);
 }
